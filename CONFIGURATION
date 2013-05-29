@@ -1,0 +1,134 @@
+#!/bin/sh
+
+PROJECT_DIR=$1
+MAKEFILE=${PROJECT_DIR}/src/main/native/Makefile
+
+function create_makefile()
+{
+	touch ${MAKEFILE}
+	if [ $? -ne 0 ];then
+		return 2
+	fi
+	echo '' >> ${MAKEFILE}
+	echo 'ifndef PROJECT_DIR' >> ${MAKEFILE}
+	echo 'PROJECT_DIR = ../../..' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'ifndef TARGET_DIR' >> ${MAKEFILE}
+	echo 'TARGET_DIR = $(PROJECT_DIR)/target' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'EXTLIB_DIR = $(PROJECT_DIR)/src/main/native/extlib' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'ARCH=$(shell uname -m)' >> ${MAKEFILE}
+	echo 'TARGET_LIB_NAME:=$(shell cat $(PROJECT_DIR)/src/main/resources/META-INF/jniloader.txt)' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'OBJ_DIR = $(TARGET_DIR)/obj' >> ${MAKEFILE}
+	echo 'LIB_DIR = $(TARGET_DIR)/classes/META-INF' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'CC = g++' >> ${MAKEFILE}
+	echo 'LD = g++' >> ${MAKEFILE}
+	echo 'CFLAGS += -g -O2 -D_REENTRANT -DUSE_THREADS -D_THREAD_SAFE -D_GNU_SOURCE -DNEED_FILTER -DNEED_XSS -fPIC' >> ${MAKEFILE}
+	echo 'CFLAGS += -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -I $(EXTLIB_DIR)/include' >> ${MAKEFILE}
+	echo 'LDFLAGS += -shared' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'ALL_CFLAGS = ' >> ${MAKEFILE}
+	echo 'LDLIBS = ' >> ${MAKEFILE}
+	echo 'EXT_LDFLAGS = ' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'DYN_MODULES=' >> ${MAKEFILE}
+	echo 'LIB_DIRS=' >> ${MAKEFILE}
+	echo '################check cpp' >> ${MAKEFILE}
+	echo "cppcode:=\$(shell ls *.cpp 2>/dev/null 1>/dev/null; echo \$\$?)" >> ${MAKEFILE}
+	echo 'ifeq ($(cppcode),0)' >> ${MAKEFILE}
+	echo 'CPPs:=$(shell ls *.cpp)' >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'CPPs=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo '################check c' >> ${MAKEFILE}
+	echo "ccode:=\$(shell ls *.c 2>/dev/null 1>/dev/null; echo \$\$?)" >> ${MAKEFILE}
+	echo 'ifeq ($(ccode),0)' >> ${MAKEFILE}
+	echo 'Cs:=$(shell ls *.c)' >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'Cs=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo '#######32 mode' >> ${MAKEFILE}
+	echo 'DYN_MODULES += $(LIB_DIR)/32/$(TARGET_LIB_NAME)' >> ${MAKEFILE}
+	echo 'LIB_DIRS += $(LIB_DIR)/32' >> ${MAKEFILE}
+	echo 'LIB_OBJS_32=' >> ${MAKEFILE}
+	echo '####check cpp' >> ${MAKEFILE}
+	echo 'ifeq ($(cppcode),0)' >> ${MAKEFILE}
+	echo "CPP_OBJs_32:=\$(shell for srcfilename in \$(CPPs) ; do echo \$\${srcfilename} | awk -F\".\" '{print \"\$(OBJ_DIR)/32/cpp/\"\$\$1\".o \"}'; done)" >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'CPP_OBJs_32=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo 'LIB_OBJS_32 += $(CPP_OBJs_32)' >> ${MAKEFILE}
+	echo '####check c' >> ${MAKEFILE}
+	echo 'ifeq ($(ccode),0)' >> ${MAKEFILE}
+	echo "C_OBJs_32:=\$(shell for srcfilename in \$(Cs) ; do echo \$\${srcfilename} | awk -F\".\" '{print \"\$(OBJ_DIR)/32/c/\"\$\$1\".o \"}'; done)" >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'C_OBJs_32=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo 'LIB_OBJS_32+=$(C_OBJs_32)' >> ${MAKEFILE}
+	echo '#######64 mode' >> ${MAKEFILE}
+	echo 'ifeq ($(ARCH),x86_64)' >> ${MAKEFILE}
+	echo 'DYN_MODULES += $(LIB_DIR)/64/$(TARGET_LIB_NAME)' >> ${MAKEFILE}
+	echo 'LIB_DIRS += $(LIB_DIR)/64' >> ${MAKEFILE}
+	echo 'LIB_OBJS_64=' >> ${MAKEFILE}
+	echo '####check cpp' >> ${MAKEFILE}
+	echo 'ifeq ($(cppcode),0)' >> ${MAKEFILE}
+	echo "CPP_OBJs_64:=\$(shell for srcfilename in \$(CPPs) ; do echo \$\${srcfilename} | awk -F\".\" '{print \"\$(OBJ_DIR)/64/cpp/\"\$\$1\".o \"}'; done)" >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'CPP_OBJs_64=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo 'LIB_OBJS_64 += $(CPP_OBJs_64)' >> ${MAKEFILE}
+	echo '####check c' >> ${MAKEFILE}
+	echo 'ifeq ($(ccode),0)' >> ${MAKEFILE}
+	echo "C_OBJs_64:=\$(shell for srcfilename in \$(Cs) ; do echo \$\${srcfilename} | awk -F\".\" '{print \"\$(OBJ_DIR)/64/c/\"\$\$1\".o \"}'; done)" >> ${MAKEFILE}
+	echo 'else' >> ${MAKEFILE}
+	echo 'C_OBJs_64=' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo 'LIB_OBJS_64 += $(C_OBJs_64)' >> ${MAKEFILE}
+	echo 'endif' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '.PHONY: clean' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'debug opt: $(OBJ_DIR) $(LIB_DIRS) $(DYN_MODULES) ' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(OBJ_DIR):' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(OBJ_DIR)/32/cpp' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(OBJ_DIR)/32/c' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(OBJ_DIR)/64/cpp' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(OBJ_DIR)/64/c' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(LIB_DIRS):' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(LIB_DIR)/32' >> ${MAKEFILE}
+	echo -e '\t-@mkdir -p $(LIB_DIR)/64' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(OBJ_DIR)/32/c/%.o: %.c' >> ${MAKEFILE}
+	echo -e '\t-gcc -m32 -c -o $@ $(CFLAGS) $(ALL_CFLAGS) $<' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(OBJ_DIR)/32/cpp/%.o: %.cpp' >> ${MAKEFILE}
+	echo -e '\t-$(CC) -m32 -c -o $@ $(CFLAGS) $(ALL_CFLAGS) $<' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(OBJ_DIR)/64/c/%.o: %.c' >> ${MAKEFILE}
+	echo -e '\t-gcc -c -o $@ $(CFLAGS) $(ALL_CFLAGS) $<' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(OBJ_DIR)/64/cpp/%.o: %.cpp' >> ${MAKEFILE}
+	echo -e '\t-$(CC) -c -o $@ $(CFLAGS) $(ALL_CFLAGS) $<' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(LIB_DIR)/32/$(TARGET_LIB_NAME): $(LIB_OBJS_32)' >> ${MAKEFILE}
+	echo -e '\t-$(LD) $(LDFLAGS) -m32 -o $@ $(LIB_OBJS_32) -L $(EXTLIB_DIR)/lib/32 $(EXT_LDFLAGS)' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo '$(LIB_DIR)/64/$(TARGET_LIB_NAME): $(LIB_OBJS_64)' >> ${MAKEFILE}
+	echo -e '\t-$(LD) $(LDFLAGS) -o $@ $(LIB_OBJS_64) -L $(EXTLIB_DIR)/lib/64  $(EXT_LDFLAGS)' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+	echo 'clean:' >> ${MAKEFILE}
+	echo -e '\t-@rm -rf $(LIB_DIR) $(OBJ_DIR)' >> ${MAKEFILE}
+	echo '' >> ${MAKEFILE}
+}
+
+if [ ! -f ${MAKEFILE} ]; then
+	create_makefile
+fi
+
